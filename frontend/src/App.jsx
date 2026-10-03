@@ -18,27 +18,28 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// Hardcoded directly to your live Render backend
+const API_BASE = 'https://monex-guava-pdf-editor.onrender.com';
+
 const TOOLS = [
-  { id: 'merge', label: 'Merge PDF', icon: Layers, color: 'text-green-800', endpoint: '/api/pdf/merge', multiple: true, accept: '.pdf' },
-  { id: 'split', label: 'Split PDF', icon: Split, color: 'text-rose-600', endpoint: '/api/pdf/split', multiple: false, accept: '.pdf', extraField: 'page_range', extraLabel: 'Page Range (e.g. 1-2 or 1,3)', defaultExtra: '1-2' },
-  { id: 'rotate', label: 'Rotate PDF', icon: RotateCw, color: 'text-green-600', endpoint: '/api/pdf/rotate', multiple: false, accept: '.pdf', extraField: 'angle', extraLabel: 'Rotation Angle', defaultExtra: '90' },
-  { id: 'delete', label: 'Delete Pages', icon: Trash2, color: 'text-rose-600', endpoint: '/api/pdf/delete-pages', multiple: false, accept: '.pdf', extraField: 'pages_to_delete', extraLabel: 'Pages to Delete (e.g. 1, 3)', defaultExtra: '1' },
-  { id: 'img2pdf', label: 'Photos to PDF', icon: ImageIcon, color: 'text-green-800', endpoint: '/api/images/to-pdf', multiple: true, accept: 'image/jpeg,image/png' },
-  { id: 'protect', label: 'Protect PDF', icon: Lock, color: 'text-rose-600', endpoint: '/api/pdf/protect', multiple: false, accept: '.pdf', extraField: 'password', extraLabel: 'Encryption Password', defaultExtra: 'GuavaPass123' },
-  { id: 'unlock', label: 'Unlock PDF', icon: Unlock, color: 'text-green-600', endpoint: '/api/pdf/unlock', multiple: false, accept: '.pdf', extraField: 'password', extraLabel: 'PDF Password', defaultExtra: '' },
-  { id: 'extract', label: 'Extract Text', icon: Eye, color: 'text-green-800', endpoint: '/api/pdf/extract-text', multiple: false, accept: '.pdf', isJson: true },
+  { id: 'merge', label: 'Merge PDF', icon: Layers, color: 'text-green-800', endpoint: `${API_BASE}/api/pdf/merge`, multiple: true, accept: '.pdf' },
+  { id: 'split', label: 'Split PDF', icon: Split, color: 'text-rose-600', endpoint: `${API_BASE}/api/pdf/split`, multiple: false, accept: '.pdf', extraField: 'page_range', extraLabel: 'Page Range (e.g. 1-2 or 1,3)', defaultExtra: '1-2' },
+  { id: 'rotate', label: 'Rotate PDF', icon: RotateCw, color: 'text-green-600', endpoint: `${API_BASE}/api/pdf/rotate`, multiple: false, accept: '.pdf', extraField: 'angle', extraLabel: 'Rotation Angle', defaultExtra: '90' },
+  { id: 'delete', label: 'Delete Pages', icon: Trash2, color: 'text-rose-600', endpoint: `${API_BASE}/api/pdf/delete-pages`, multiple: false, accept: '.pdf', extraField: 'pages_to_delete', extraLabel: 'Pages to Delete (e.g. 1, 3)', defaultExtra: '1' },
+  { id: 'img2pdf', label: 'Photos to PDF', icon: ImageIcon, color: 'text-green-800', endpoint: `${API_BASE}/api/images/to-pdf`, multiple: true, accept: 'image/jpeg,image/png' },
+  { id: 'protect', label: 'Protect PDF', icon: Lock, color: 'text-rose-600', endpoint: `${API_BASE}/api/pdf/protect`, multiple: false, accept: '.pdf', extraField: 'password', extraLabel: 'Encryption Password', defaultExtra: 'GuavaPass123' },
+  { id: 'unlock', label: 'Unlock PDF', icon: Unlock, color: 'text-green-600', endpoint: `${API_BASE}/api/pdf/unlock`, multiple: false, accept: '.pdf', extraField: 'password', extraLabel: 'PDF Password', defaultExtra: '' },
+  { id: 'extract', label: 'Extract Text', icon: Eye, color: 'text-green-800', endpoint: `${API_BASE}/api/pdf/extract-text`, multiple: false, accept: '.pdf', isJson: true },
 ];
 
 export default function App() {
   const [selectedTool, setSelectedTool] = useState(TOOLS[0]);
   const [files, setFiles] = useState([]);
   const [extraValue, setExtraValue] = useState(TOOLS[0].defaultExtra || '');
-  
-  // Execution & Movie States
+
+  // Modal & Processing Synchronization
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isServerDone, setIsServerDone] = useState(false);
-  
-  // Temporary storage for completed output until movie finishes at 100%
   const [pendingResult, setPendingResult] = useState(null);
 
   const [downloadUrl, setDownloadUrl] = useState(null);
@@ -88,7 +89,6 @@ export default function App() {
       return;
     }
 
-    // Open the animated movie modal immediately
     setIsModalOpen(true);
     setIsServerDone(false);
     setPendingResult(null);
@@ -114,7 +114,7 @@ export default function App() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        const errorData = await res.json().catch(() => ({ detail: `HTTP ${res.status}: ${res.statusText}` }));
         throw new Error(errorData.detail || 'Task processing failed');
       }
 
@@ -134,10 +134,8 @@ export default function App() {
         setPendingResult({ type: 'blob', url, fname });
       }
 
-      // Signal movie modal that server computation is done
-      // The modal will now smoothly finish through 100% and show the person eating
+      // Signal modal that the server completed
       setIsServerDone(true);
-
     } catch (err) {
       setIsModalOpen(false);
       setIsServerDone(false);
@@ -145,8 +143,7 @@ export default function App() {
     }
   };
 
-  // Callback triggered when the person completes eating the guava at 100%
-  const handleMovieFinished = () => {
+  const handleModalFinished = () => {
     setIsModalOpen(false);
     setIsServerDone(false);
 
@@ -162,12 +159,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#eef8ed] text-neutral-900 flex flex-col font-sans">
-      {/* 🎬 0% to 100% Continuous Guava Movie Modal */}
+      {/* 120 FPS Spinning Guava Wheel Modal Popup */}
       <GuavaGrowthModal 
         isOpen={isModalOpen} 
         totalBytes={totalBytes}
         isServerDone={isServerDone}
-        onMovieFinished={handleMovieFinished}
+        onMovieFinished={handleModalFinished}
       />
 
       {/* Header */}
@@ -330,7 +327,7 @@ export default function App() {
             }`}
           >
             <span className="tracking-wide">
-              {isModalOpen ? "Enjoying Guava Movie in RAM..." : `Execute ${selectedTool.label}`}
+              {isModalOpen ? 'Processing in Memory...' : `Execute ${selectedTool.label}`}
             </span>
           </button>
         </div>
